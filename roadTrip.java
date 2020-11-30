@@ -121,6 +121,8 @@ public class roadTrip extends graph
         {
             organizedAttractions.remove(end);
             organizedAttractions.add(end);
+        }else{
+            organizedAttractions.add(end);
         }
 
         Stack locationList = new Stack();
@@ -131,7 +133,7 @@ public class roadTrip extends graph
             String nextAttraction = organizedAttractions.get(i+1);
             String temp = organizedAttractions.get(i+1);
 
-            locationList.add(nextAttraction);
+            locationList.push(nextAttraction);
             
             while(!currentAttraction.equals(nextAttraction))
             {
@@ -148,7 +150,6 @@ public class roadTrip extends graph
             isVisited = new Hashtable<>();
             previous = new Hashtable<>();
             distance = new Hashtable<>();
-            //TODO: finish up the implementaton of the dikjstra/dfs amalgam
 
             for(String cities: cityList)
             {
@@ -176,7 +177,6 @@ public class roadTrip extends graph
                     }   
                 }
             }
-            //TODO: try to refractor/restructure some parts to see if i can improve  the code
         }
         return path;
     }
@@ -214,12 +214,29 @@ public class roadTrip extends graph
             {
                 return edgePoint.weight;
             }
-            else if (edgePoint.pointA.equals(vertex2)&&edgePoint.pointB.equals(vertex2))
+            else if (edgePoint.pointA.equals(vertex2)&&edgePoint.pointB.equals(vertex1))
             {
                 return edgePoint.weight;
             }
         }
         return weight;
+    }
+
+    private int getTime(String vertex1, String vertex2)
+    {
+        int minutes = 0;
+        for(edge edgePoint: map.edgeCases)
+        {
+            if(edgePoint.pointA.equals(vertex1)&&edgePoint.pointB.equals(vertex2))
+            {
+                return edgePoint.minutes;
+            }
+            else if (edgePoint.pointA.equals(vertex2)&&edgePoint.pointB.equals(vertex1))
+            {
+                return edgePoint.minutes;
+            }
+        }
+        return minutes;
     }
 
     public void printRoads(List<String> routes)
@@ -236,12 +253,7 @@ public class roadTrip extends graph
         plan.Attractions(attractions);
         plan.roadReader(roads);
         List<String> attractionPlans= new ArrayList<>();
-        attractionPlans.add("USS Midway Museum");
-        attractionPlans.add("The Alamo Mission");
-        attractionPlans.add("Pike Place Market");
         attractionPlans.add("Statue of Liberty");
-        attractionPlans.add("Portland City Tour");
-        attractionPlans.add("Alcatraz");
         List<String> path = plan.route("Redding CA", "San Francisco CA",attractionPlans);
         plan.printRoads(path);
     }
