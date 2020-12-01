@@ -103,23 +103,7 @@ public class roadTrip extends graph
         //smallest() and then set the vertex to be discovered. Later go to through the adjacency list and then
         //invoke dijkstras to get the path.
 
-        for(String cities: cityList)
-        {
-            while(!isVisited.get(cities))
-            {
-                String vertex = smallest();
-                discoveredPath(vertex);
-                for(String value: map.adjacentList.get(vertex))
-                {
-                    int weight = getWeight(vertex,value);
-                    if(distance.get(value)>distance.get(vertex)+weight&&!value.equals(vertex))
-                    {
-                        distance.put(value,distance.get(vertex)+weight);
-                        previous.put(value, vertex);
-                    }
-                }
-            }
-        }
+        visitCities(cityList);
 
         ArrayList<Integer> sortTraps = new ArrayList<>();
         ArrayList<String> organizedAttractions= new ArrayList<>();
@@ -155,7 +139,9 @@ public class roadTrip extends graph
         }else{
             organizedAttractions.add(end);
         }
-
+        //creates a stack that will push the nextAttraction
+        //and then add to the miles taken and the time.
+        //later pop from the stack and then add to the path list.
         Stack locationList = new Stack();
 
         for(int i =0;i<organizedAttractions.size()-1;i++)
@@ -168,10 +154,10 @@ public class roadTrip extends graph
             
             while(!currentAttraction.equals(nextAttraction))
             {
-                String previousCity = previous.get(nextAttraction);
-                milesTaken+=getWeight(nextAttraction,previousCity);
-                time+=getTime(nextAttraction,previousCity);
-                locationList.add(previousCity);
+                String prevAttraction = previous.get(nextAttraction);
+                milesTaken+=getWeight(nextAttraction,prevAttraction);
+                time+=getTime(nextAttraction,prevAttraction);
+                locationList.add(prevAttraction);
                 nextAttraction=previous.get(nextAttraction);
             }
 
@@ -180,10 +166,11 @@ public class roadTrip extends graph
                 path.add((String)locationList.pop());
             }
 
+            //begin to reset the path information after each attractionn in order to
+            //gurantee a path to backtrack.
             isVisited = new Hashtable<>();
             previous = new Hashtable<>();
             distance = new Hashtable<>();
-
             for(String cities: cityList)
             {
                 if(cities!= null)
@@ -193,28 +180,15 @@ public class roadTrip extends graph
                 }
             }
             distance.put(temp,0);
-            for(String cities: cityList)
-            {
-                while(!isVisited.get(cities))
-                {
-                    String vertex = smallest();
-                    discoveredPath(vertex);
-                    for(String value: map.adjacentList.get(vertex))
-                    {
-                        int weight = getWeight(vertex,value);
-                        if(distance.get(value)>distance.get(vertex)+weight&&!value.equals(vertex))
-                        {
-                            distance.put(value,distance.get(vertex)+weight);
-                            previous.put(value, vertex);
-                        }
-                    }   
-                }
-            }
+            visitCities(cityList);
         }
         return path;
     }
 
-    private String smallest()
+    //will first have the 0-cost city for the start location
+    //then on the future values the cities will properly update to the node with
+    //the less dstance and not visited yet.
+    private String smallestUnknownVertex()
     {
         String vertex ="";
         int min = Integer.MAX_VALUE;
@@ -229,7 +203,8 @@ public class roadTrip extends graph
         }
         return vertex;
     }
-    //private function that will put the visited city and mark it true.s
+    //private function that will put the visited city and mark it true for the location that 
+    //has just been visited.
     private void discoveredPath(String vertex)
     {
         if(vertex!= null)
@@ -274,6 +249,30 @@ public class roadTrip extends graph
             }
         }
         return minutes;
+    }
+    //helper function to help visit through the city list in order to 
+    //set the distance values in the hashtable to its respective location
+    //as well as operate the hashtable that will get its previous location from
+    //the current one.
+    private void visitCities(HashSet<String> cityList)
+    {
+        for(String cities: cityList)
+        {
+            while(!isVisited.get(cities))
+            {
+                String vertex = smallestUnknownVertex();
+                discoveredPath(vertex);
+                for(String value: map.adjacentList.get(vertex))
+                {
+                    int weight = getWeight(vertex,value);
+                    if(distance.get(value)>distance.get(vertex)+weight&&!value.equals(vertex))
+                    {
+                        distance.put(value,distance.get(vertex)+weight);
+                        previous.put(value, vertex);
+                    }
+                }   
+            }
+        }
     }
 
     public void printRoads(List<String> routes)
