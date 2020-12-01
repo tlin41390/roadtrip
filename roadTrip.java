@@ -4,17 +4,20 @@ import java.io.*;
 
 public class roadTrip extends graph
 {
-    Hashtable<String, String> places;
-    Hashtable<String, Boolean> isVisited;
-    Hashtable<String, String> previous;
-    Hashtable<String, Integer> distance;
-    HashSet<String> cityList;
-    int milesTaken;
-    int time;
-    graph map;
+    // created 4 hashtables that will be pivotal to the algorithim
+    // that will find the shortest path.
+    Hashtable<String, String> places; //key: attraction, value: locaton
+    Hashtable<String, Boolean> isVisited; //key:locaton, value: boolean(T/F)
+    Hashtable<String, String> previous; //key:location, value: previous location
+    Hashtable<String, Integer> distance; //key: current location, value: total distance relative to starting point
+
+    HashSet<String> cityList; // list of all the cities 
+    int milesTaken; // total distance traveled
+    int time; // total time traveled 
+    graph map; //containts the edge and the verticies for the adjacent list.
 
     public roadTrip() {
-        places = new Hashtable<>(143);
+        places = new Hashtable<>();
         isVisited = new Hashtable<>();
         previous = new Hashtable<>();
         distance = new Hashtable<>();
@@ -25,19 +28,24 @@ public class roadTrip extends graph
     }
 
     public void roadReader(String roadFile) throws Exception {
+        //This function serves as a parser for the road. It will start with taking the 
+        //road file as a parameter, then convert the strings to an int for distance and time, and
+        //finally, it will add the edge accordingly as well as add the cities to the city list.
         String roads = roadFile;
         String roadContent = "";
-        cityList = new HashSet<>();
 
         try (BufferedReader read = new BufferedReader(new FileReader(roads))) {
             while ((roadContent = read.readLine()) != null) {
                 String[] line = roadContent.split(",");
                 Integer distance = Integer.parseInt(line[2]);
+                //checks to see if there is a typo in the roads file.
                 if (line[3].equals("10a")) {
                     line[3] = "100";
                 }
                 Integer time = Integer.parseInt(line[3]);
                 if (line[0] != null && line[1] != null) {
+                    //construct the graph via adjacency list then add the cities to
+                    //the hashset cityList.
                     map.addEdge(line[0], line[1], distance, time);
                     cityList.add(line[0]);
                     cityList.add(line[1]);
@@ -49,12 +57,17 @@ public class roadTrip extends graph
     }
 
     public void Attractions(String attractionFile) throws Exception {
+        //just like the roads filereader this function will read the attractions
+        //then set a key which will be the attraction itself, and then the value will be
+        //the city where that attraction will be located.
         String attraction = attractionFile;
         String attractionContent = "";
 
         try (BufferedReader read = new BufferedReader(new FileReader(attraction))) {
             while ((attractionContent = read.readLine()) != null) {
                 String[] line = attractionContent.split(",");
+                //update the hashtable with the key being the attraction and the value being the
+                //city.
                 places.put(line[0],line[1]);
             }
         } catch (Exception e) {
@@ -66,19 +79,29 @@ public class roadTrip extends graph
 
     List<String> route(String start, String end, List<String> touristTraps)
     {
+        //the path will represent the route from the start to the end and 
+        //at the same time visit the respective attractions.
         ArrayList<String> path = new ArrayList<>();
         map.addEdge(start,start,0,0);
+        Iterator<String> cityIndex = cityList.iterator();
 
-        for(String cities:cityList)
+        //initialized the visited with false and the distance hashtable
+        //with infinity. The start location will be at vertex 0 and then 
+        //use dijkstra to visit each city. 
+        while(cityIndex.hasNext())
         {
-            if(cities!=null)
+            String city = cityIndex.next();
+            if(city!=null)
             {
-            isVisited.put(cities,false);
-            distance.put(cities,Integer.MAX_VALUE);
+                isVisited.put(city,false);
+                distance.put(city,Integer.MAX_VALUE);
             }
         }
 
         distance.put(start, 0);
+        //loop through the city list and while the city has not been visited, set the vertex to 
+        //smallest() and then set the vertex to be discovered. Later go to through the adjacency list and then
+        //invoke dijkstras to get the path.
 
         for(String cities: cityList)
         {
@@ -101,11 +124,16 @@ public class roadTrip extends graph
         ArrayList<Integer> sortTraps = new ArrayList<>();
         ArrayList<String> organizedAttractions= new ArrayList<>();
         Hashtable<Integer, String> conversion = new Hashtable<>();
-
-        for(String attraction : touristTraps)
+        Iterator<String> attractionList = touristTraps.iterator();
+        //sort the attractions/tourist traps from distance to prioritize which attraction to visit first.
+        //the conversion  hashtable serves as an estimator to determine the distance of each attraction in
+        //order to sort the attracton list from closest to farthest. Then, add them into the organized list of 
+        //attractions, where the cities will be in order.
+        while(attractionList.hasNext())
         {
-            sortTraps.add(distance.get(places.get(attraction)));
-            conversion.put(distance.get(places.get(attraction)),attraction);
+            String attractionIndex = attractionList.next();
+            sortTraps.add(distance.get(places.get(attractionIndex)));
+            conversion.put(distance.get(places.get(attractionIndex)),attractionIndex);
         }
 
         Collections.sort(sortTraps);
@@ -116,6 +144,9 @@ public class roadTrip extends graph
         }
 
         organizedAttractions.add(0,start);
+        //this checks to see if the final attraction is at the final location, if not, then do
+        //nothing or the roadtrip will stop abruptly after visitng the final attraction in many
+        //scenarios. 
 
         if(organizedAttractions.contains(end))
         {
@@ -138,6 +169,8 @@ public class roadTrip extends graph
             while(!currentAttraction.equals(nextAttraction))
             {
                 String previousCity = previous.get(nextAttraction);
+                milesTaken+=getWeight(nextAttraction,previousCity);
+                time+=getTime(nextAttraction,previousCity);
                 locationList.add(previousCity);
                 nextAttraction=previous.get(nextAttraction);
             }
@@ -196,7 +229,7 @@ public class roadTrip extends graph
         }
         return vertex;
     }
-
+    //private function that will put the visited city and mark it true.s
     private void discoveredPath(String vertex)
     {
         if(vertex!= null)
@@ -204,7 +237,9 @@ public class roadTrip extends graph
             isVisited.put(vertex, true);
         }
     }
-
+    // private helper function that wll get the weight/ miles through 
+    // the two vertex parameters and then return the weght, which will be
+    // the miles.
     private int getWeight(String vertex1, String vertex2)
     {
         int weight = 0;
@@ -222,6 +257,8 @@ public class roadTrip extends graph
         return weight;
     }
 
+    //private helper function that will get the time for the roadtrip
+    //by looping through the map and the edgeweights to get the time.
     private int getTime(String vertex1, String vertex2)
     {
         int minutes = 0;
@@ -242,19 +279,22 @@ public class roadTrip extends graph
     public void printRoads(List<String> routes)
     {
         System.out.println(routes.toString());
+        System.out.println();
+        System.out.println("total distance: "+ milesTaken+ " miles");
+        System.out.println("time taken: "+ time+ " minutes");
     }
 
 
 
     public static void main(String[] args) throws Exception {
-        String attractions = "attractions.csv";
-        String roads = "roads.csv";
+        String roads = args[0];
+        String attractions = args[1];
         roadTrip plan = new roadTrip();
         plan.Attractions(attractions);
         plan.roadReader(roads);
         List<String> attractionPlans= new ArrayList<>();
         attractionPlans.add("Statue of Liberty");
-        List<String> path = plan.route("Redding CA", "San Francisco CA",attractionPlans);
+        List<String> path = plan.route("San Francisco CA", "Redding CA",attractionPlans);
         plan.printRoads(path);
     }
 }
